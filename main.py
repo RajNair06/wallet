@@ -3,6 +3,7 @@ from fastapi import FastAPI
 from db.session import init_db
 from routers.auth import router as auth_router
 from routers.users import router as users_router
+from routers.wallet import router as wallet_router
 
 
 async def lifespan(app: FastAPI):
@@ -13,6 +14,7 @@ async def lifespan(app: FastAPI):
 app = FastAPI(lifespan=lifespan)
 app.include_router(auth_router)
 app.include_router(users_router)
+app.include_router(wallet_router)
 
 
 @app.get("/")

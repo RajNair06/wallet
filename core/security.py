@@ -4,7 +4,7 @@ from typing import Any
 from jose import jwt
 from passlib.context import CryptContext
 
-from core.config import SECRET_KEY, ALGORITHM
+from config import Config
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
@@ -21,4 +21,4 @@ def create_access_token(data: dict[str, Any], expires_delta: timedelta | None = 
     to_encode = data.copy()
     expire = datetime.now(timezone.utc) + (expires_delta or timedelta(minutes=15))
     to_encode.update({"exp": expire})
-    return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
+    return jwt.encode(to_encode, Config.SECRET_KEY, algorithm=Config.ALGORITHM)

@@ -4,7 +4,7 @@ from jose import JWTError, jwt
 from sqlmodel import select
 from sqlmodel.ext.asyncio.session import AsyncSession
 
-from core.config import SECRET_KEY, ALGORITHM
+from config import Config
 from db.models import User
 from db.session import get_session
 
@@ -21,7 +21,7 @@ async def get_current_user(
         headers={"WWW-Authenticate": "Bearer"},
     )
     try:
-        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        payload = jwt.decode(token, Config.SECRET_KEY, algorithms=[Config.ALGORITHM])
         email: str | None = payload.get("sub")
         if email is None:
             raise credentials_exception
