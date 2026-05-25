@@ -1,5 +1,191 @@
-from fastapi import Depends,APIRouter
+from fastapi import Depends,APIRouter,status,HTTPException
+from sqlalchemy.ext.asyncio import AsyncSession
+from db.session import get_session
+from dependencies.auth import get_current_user
+from db.models import User,Wallet,Transaction,TransactionType
+from sqlmodel import select
+from schemas.transaction import DepositWithdrawRequest,TransferRequest
+
 
 router = APIRouter(prefix="/transaction", tags=["transaction"])
 
-@router.post()
+@router.patch(path="/withdraw")
+async def transaction(
+    payload:DepositWithdrawRequest,
+    session: AsyncSession = Depends(get_session),
+    user: User = Depends(get_current_user)
+):
+    if payload.amount<=0:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST,detail="withdrawal amount must be greater than zero")
+    query=select(Wallet).where(Wallet.user_id==user.id)
+    result=await session.execute(query)
+    existing_wallet=result.scalar_one_or_none()
+    if not existing_wallet:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="A wallet doesn't exist for the user."
+            )
+    if payload.amount>existing_wallet.balance:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Insufficient Balance"
+            )
+    if existing_wallet.currency != payload.currency:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Currency mismatch with your wallet."
+        )
+    existing_wallet.balance=existing_wallet.balance-payload.amount
+    transaction=Transaction(from_wallet_id=existing_wallet.id,amount=payload.amount,currency=existing_wallet.currency,transaction_type=TransactionType.WITHDRAWAL)
+    session.add(transaction)
+    await session.commit()
+    await session.refresh(existing_wallet)
+    
+    return {
+        "wallet_id":existing_wallet.id,"amount":payload.amount,"current_balance":existing_wallet.balance
+        }
+
+
+@router.patch(path="/deposit")
+async def deposit_transaction(
+    payload: DepositWithdrawRequest,
+    session: AsyncSession = Depends(get_session),
+    user: User = Depends(get_current_user)
+):
+    if payload.amount <= 0:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Deposit amount must be greater than zero"
+        )
+        
+    query = select(Wallet).where(Wallet.user_id == user.id)
+    result = await session.execute(query)
+    existing_wallet = result.scalar_one_or_none()
+    
+    if not existing_wallet:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="A wallet doesn't exist for the user."
+        )
+    if existing_wallet.currency != payload.currency:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Currency mismatch with your wallet."
+        )
+        
+    # Add money to the balance
+    existing_wallet.balance = existing_wallet.balance + payload.amount
+    
+    # Create log: assigned to to_wallet_id
+    transaction = Transaction(
+        to_wallet_id=existing_wallet.id,
+        from_wallet_id=None,  # External source
+        amount=payload.amount,
+        currency=existing_wallet.currency,
+        transaction_type=TransactionType.DEPOSIT
+    )
+    
+    session.add(transaction)
+    await session.commit()
+    await session.refresh(existing_wallet)
+    
+    return {
+        "wallet_id": existing_wallet.id,
+        "amount": payload.amount,
+        "current_balance": existing_wallet.balance
+    }
+
+
+@router.patch(path="/transfer")
+async def transfer_transaction(
+    payload: TransferRequest,
+    session: AsyncSession = Depends(get_session),
+    user: User = Depends(get_current_user)
+):
+    if payload.amount <= 0:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Transfer amount must be greater than zero"
+        )
+        
+    # 1. Fetch sender's wallet
+    sender_query = select(Wallet).where(Wallet.user_id == user.id)
+    sender_result = await session.execute(sender_query)
+    existing_wallet = sender_result.scalar_one_or_none()
+    
+    if not existing_wallet:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Your wallet doesn't exist."
+        )
+        
+    # Prevent transferring to oneself
+    if existing_wallet.id == payload.to_account_id:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Cannot transfer money to your own wallet."
+        )
+        
+    if payload.amount > existing_wallet.balance:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Insufficient Balance"
+        )
+        
+    # 2. Fetch receiver's wallet using the target ID from payload
+    receiver_query = select(Wallet).where(Wallet.id == payload.to_account_id)
+    receiver_result = await session.execute(receiver_query)
+    receiver_wallet = receiver_result.scalar_one_or_none()
+    
+    if not receiver_wallet:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Recipient wallet not found."
+        )
+        
+    # Optional: Currency match verification
+    if existing_wallet.currency != payload.currency:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Currency mismatch with your wallet."
+        )
+        
+    # 3. Perform the balance swap
+    existing_wallet.balance = existing_wallet.balance - payload.amount
+    receiver_wallet.balance = receiver_wallet.balance + payload.amount
+    
+    # 4. Create log: from_wallet_id is sender, to_wallet_id is payload target
+    transaction = Transaction(
+        from_wallet_id=existing_wallet.id,
+        to_wallet_id=payload.to_account_id,
+        amount=payload.amount,
+        currency=existing_wallet.currency,
+        transaction_type=TransactionType.TRANSFER
+    )
+    
+    session.add(transaction)
+    await session.commit()
+    await session.refresh(existing_wallet)
+    
+    return {
+        "wallet_id": existing_wallet.id,
+        "recipient_wallet_id": payload.to_account_id,
+        "amount": payload.amount,
+        "current_balance": existing_wallet.balance
+    }
+
+
+
+
+
+
+    
+
+
+
+    
+
+    
+
+
+

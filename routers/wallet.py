@@ -19,7 +19,7 @@ async def create_wallet(wallet:WalletCreate,session:AsyncSession=Depends(get_ses
             status_code=status.HTTP_409_CONFLICT,
             detail="A wallet already exists for this user."
         )
-    new_wallet = Wallet(user_id=user.id, balance=wallet.balance, currency=wallet.currency)
+    new_wallet = Wallet(user_id=user.id, balance=wallet.balance, currency=wallet.currency.upper())
     session.add(new_wallet)
     await session.commit()
     await session.refresh(new_wallet)
@@ -62,4 +62,3 @@ async def get_wallet(session:AsyncSession=Depends(get_session),user:User=Depends
          **existing_wallet.model_dump(),
          "full name":f"{user_name}"
      }
-

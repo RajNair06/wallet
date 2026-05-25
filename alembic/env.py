@@ -26,6 +26,8 @@ def run_migrations_offline() -> None:
         target_metadata=target_metadata,
         literal_binds=True,
         dialect_opts={"paramstyle": "named"},
+        user_module_prefix="sqlmodel.sql.sqltypes.",  # Forces the generation of SQLModel imports
+        render_as_batch=True
     )
 
     with context.begin_transaction():
@@ -36,7 +38,9 @@ def do_run_migrations(connection):
     """Synchronous context runner required by Alembic."""
     context.configure(
         connection=connection, 
-        target_metadata=target_metadata
+        target_metadata=target_metadata,
+        user_module_prefix="sqlmodel.sql.sqltypes.",  # Forces the generation of SQLModel imports
+        render_as_batch=True
     )
 
     with context.begin_transaction():

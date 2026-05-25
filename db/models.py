@@ -41,8 +41,8 @@ class Wallet(SQLModel, table=True):
 
 class Transaction(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
-    from_wallet_id: int = Field(foreign_key="wallet.id",default=None)
-    to_wallet_id: int = Field(foreign_key="wallet.id",default=None)
+    from_wallet_id: int | None = Field(foreign_key="wallet.id",default=None)
+    to_wallet_id: int| None = Field(foreign_key="wallet.id",default=None)
     amount: int = Field(
         default=0,
         sa_column=Column(Integer, CheckConstraint("amount >= 0"), nullable=False)
