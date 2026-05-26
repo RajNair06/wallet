@@ -1,10 +1,12 @@
-from fastapi import Depends,APIRouter,status,HTTPException
+from fastapi import Depends,APIRouter,status,HTTPException,Query
 from sqlalchemy.ext.asyncio import AsyncSession
 from db.session import get_session
 from dependencies.auth import get_current_user
 from db.models import User,Wallet,Transaction,TransactionType
 from sqlmodel import select
 from schemas.transaction import DepositWithdrawRequest,TransferRequest
+from sqlalchemy.orm import aliased
+from sqlalchemy import or_
 
 
 router = APIRouter(prefix="/transaction", tags=["transaction"])
@@ -175,6 +177,43 @@ async def transfer_transaction(
     }
 
 
+@router.get(path="/history")
+async def deposit_transaction(limit:int=Query(default=10,ge=1,le=100),offset:int=Query(default=0,ge=0),
+    session: AsyncSession = Depends(get_session),
+    user: User = Depends(get_current_user)
+):
+    wallet_query=select(Wallet.id).where(Wallet.user_id==user.id)
+    wallet_result=await session.execute(wallet_query)
+    user_wallet_id=wallet_result.scalar_one_or_none()
+    if not user_wallet_id:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,detail="wallet not found")
+    SenderWallet=aliased(Wallet)
+    SenderUser=aliased(User)
+    ReceiverWallet=aliased(Wallet)
+    ReceiverUser=aliased(User)
+    history_query=(select(Transaction.id,Transaction.amount,Transaction.currency,Transaction.transaction_type,Transaction.created_at,(SenderUser.first_name+ " "+ SenderUser.last_name).label("sender_name"),(ReceiverUser.first_name+ " "+ ReceiverUser.last_name).label("receiver_name")).outerjoin(SenderWallet, Transaction.from_wallet_id == SenderWallet.id).outerjoin(SenderUser, SenderWallet.user_id == SenderUser.id).outerjoin(ReceiverWallet, Transaction.to_wallet_id == ReceiverWallet.id).outerjoin(ReceiverUser, ReceiverWallet.user_id == ReceiverUser.id).where(or_(Transaction.from_wallet_id == user_wallet_id,Transaction.to_wallet_id == user_wallet_id)).order_by(Transaction.created_at.desc()).limit(limit).offset(offset) )
+
+    result=await session.execute(history_query)
+    transactions_list = []
+    for row in result.all():
+        transactions_list.append({
+            "id": row.id,
+            "amount": row.amount,
+            "currency": row.currency,
+            "type": row.transaction_type,
+            "date": row.created_at,
+            "sender": row.sender_name if row.sender_name and row.sender_name.strip() else "External Source",
+            "receiver": row.receiver_name if row.receiver_name and row.receiver_name.strip() else "External Destination"
+        })
+        
+    return {
+        "transactions": transactions_list,
+        "limit": limit,
+        "offset": offset
+    }
+
+    
+    
 
 
 
