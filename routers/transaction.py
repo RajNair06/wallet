@@ -1,4 +1,4 @@
-from fastapi import Depends,APIRouter,status,HTTPException,Query
+from fastapi import Depends,APIRouter,status,HTTPException,Query,Header
 from sqlalchemy.ext.asyncio import AsyncSession
 from db.session import get_session
 from dependencies.auth import get_current_user
@@ -13,7 +13,7 @@ router = APIRouter(prefix="/transaction", tags=["transaction"])
 
 @router.patch(path="/withdraw")
 async def transaction(
-    payload:DepositWithdrawRequest,
+    payload:DepositWithdrawRequest,x_idempotency_key: str = Header(..., alias="X-Idempotency-Key"),
     session: AsyncSession = Depends(get_session),
     user: User = Depends(get_current_user)
 ):
@@ -50,7 +50,7 @@ async def transaction(
 
 @router.patch(path="/deposit")
 async def deposit_transaction(
-    payload: DepositWithdrawRequest,
+    payload: DepositWithdrawRequest,x_idempotency_key: str = Header(..., alias="X-Idempotency-Key"),
     session: AsyncSession = Depends(get_session),
     user: User = Depends(get_current_user)
 ):
@@ -100,7 +100,7 @@ async def deposit_transaction(
 
 @router.patch(path="/transfer")
 async def transfer_transaction(
-    payload: TransferRequest,
+    payload: TransferRequest,x_idempotency_key: str = Header(..., alias="X-Idempotency-Key"),
     session: AsyncSession = Depends(get_session),
     user: User = Depends(get_current_user)
 ):

@@ -5,6 +5,11 @@ from routers.auth import router as auth_router
 from routers.users import router as users_router
 from routers.wallet import router as wallet_router
 from routers.transaction import router as transaction_router
+from middleware.idempotency import CustomMiddleWare
+
+
+
+
 
 
 async def lifespan(app: FastAPI):
@@ -13,6 +18,7 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(lifespan=lifespan)
+app.add_middleware(CustomMiddleWare)
 app.include_router(auth_router)
 app.include_router(users_router)
 app.include_router(wallet_router)

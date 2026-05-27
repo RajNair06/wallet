@@ -21,3 +21,6 @@ so thats why , inside the env.py for each run_migrations function , i added an a
 
 now what i wish to implement immediately is transaction history endpoint with pagination and , this history should also include wallet owner names for better 
 
+26/6/26
+
+done with tansaction history , now what i wish to do is to ensure idempotency for my transactions , will probably 

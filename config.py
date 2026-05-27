@@ -7,3 +7,4 @@ class Config:
     ALGORITHM = os.getenv("ALGORITHM")
     ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES"))
     DATABASE_URL=os.getenv("DATABASE_URL")
+    REDIS_URL=os.getenv("REDIS_URL")
