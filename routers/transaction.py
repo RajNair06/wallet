@@ -8,11 +8,12 @@ from schemas.transaction import DepositWithdrawRequest, TransferRequest, LedgerE
 from sqlalchemy.orm import aliased
 from sqlalchemy import or_
 from workers import mail_reciept
+from core.limiter import sensitive_txn_limiter,deposit_limiter
 
 router = APIRouter(prefix="/transaction", tags=["transaction"])
 
 
-@router.patch(path="/withdraw")
+@router.patch(path="/withdraw",dependencies=[Depends(sensitive_txn_limiter)])
 async def withdraw(
     payload: DepositWithdrawRequest,
     x_idempotency_key: str = Header(..., alias="X-Idempotency-Key"),
@@ -92,7 +93,7 @@ async def withdraw(
     }
 
 
-@router.patch(path="/deposit")
+@router.patch(path="/deposit",dependencies=[Depends(deposit_limiter)])
 async def deposit_transaction(
     payload: DepositWithdrawRequest,
     x_idempotency_key: str = Header(..., alias="X-Idempotency-Key"),
@@ -172,7 +173,7 @@ async def deposit_transaction(
     }
 
 
-@router.patch(path="/transfer")
+@router.patch(path="/transfer",dependencies=[Depends(sensitive_txn_limiter)])
 async def transfer_transaction(
     payload: TransferRequest,
     x_idempotency_key: str = Header(..., alias="X-Idempotency-Key"),

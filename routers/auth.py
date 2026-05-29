@@ -10,11 +10,12 @@ from core.security import create_access_token, hash_password, verify_password
 from db.models import User
 from db.session import get_session
 from schemas.user import Token, UserCreate, UserResponse
+from core.limiter import signup_limiter,auth_limiter
 
 router = APIRouter(tags=["auth"])
 
 
-@router.post("/signup", response_model=UserResponse)
+@router.post("/signup", response_model=UserResponse,dependencies=[Depends(signup_limiter)])
 async def signup(user_data: UserCreate, session: AsyncSession = Depends(get_session)):
     result = await session.exec(select(User).where(User.email == user_data.email))
     if result.first():
@@ -32,7 +33,7 @@ async def signup(user_data: UserCreate, session: AsyncSession = Depends(get_sess
     return user
 
 
-@router.post("/token", response_model=Token)
+@router.post("/token", response_model=Token,dependencies=[Depends(auth_limiter)])
 async def login(
     form_data: OAuth2PasswordRequestForm = Depends(),
     session: AsyncSession = Depends(get_session),

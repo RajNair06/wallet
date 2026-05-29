@@ -7,6 +7,7 @@ from db.models import User
 from db.session import get_session
 from schemas.user import UserResponse
 
+
 router = APIRouter(prefix="/users", tags=["users"])
 
 
