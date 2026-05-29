@@ -1,12 +1,19 @@
-from sqlmodel import SQLModel, Field
+from sqlmodel import SQLModel, Field, UniqueConstraint
 from typing import Optional
-from datetime  import datetime
+from datetime import datetime
 from sqlalchemy import Column, Integer, String, DateTime, CheckConstraint, func
 from enum import Enum
+
+
 class TransactionType(str, Enum):
     WITHDRAWAL = "withdrawal"
     DEPOSIT = "deposit"
     TRANSFER = "transfer"
+
+
+class EntryType(str, Enum):
+    DEBIT = "debit"
+    CREDIT = "credit"
 
 
 
@@ -37,6 +44,27 @@ class Wallet(SQLModel, table=True):
     )
     
     currency: str = Field(max_length=3)
+
+
+class LedgerEntry(SQLModel, table=True):
+    __tablename__ = "ledger_entry"
+    __table_args__ = (
+        UniqueConstraint("transaction_id", "entry_type", name="uq_txn_entry_type"),
+    )
+    id: Optional[int] = Field(default=None, primary_key=True)
+    transaction_id: int = Field(foreign_key="transaction.id", nullable=False)
+    wallet_id: int | None = Field(foreign_key="wallet.id", default=None)
+    entry_type: EntryType
+    amount: int = Field(
+        default=0,
+        sa_column=Column(Integer, CheckConstraint("amount >= 0"), nullable=False)
+    )
+    currency: str = Field(max_length=3)
+    balance_snapshot: int | None = Field(default=None)
+    created_at: Optional[datetime] = Field(
+        default=None,
+        sa_column=Column(DateTime, server_default=func.now(), nullable=False)
+    )
 
 
 class Transaction(SQLModel, table=True):
