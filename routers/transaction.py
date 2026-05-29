@@ -7,12 +7,12 @@ from sqlmodel import select
 from schemas.transaction import DepositWithdrawRequest,TransferRequest
 from sqlalchemy.orm import aliased
 from sqlalchemy import or_
-
+from workers import mail_reciept
 
 router = APIRouter(prefix="/transaction", tags=["transaction"])
 
 @router.patch(path="/withdraw")
-async def transaction(
+async def withdraw(
     payload:DepositWithdrawRequest,x_idempotency_key: str = Header(..., alias="X-Idempotency-Key"),
     session: AsyncSession = Depends(get_session),
     user: User = Depends(get_current_user)
@@ -39,10 +39,19 @@ async def transaction(
         )
     existing_wallet.balance=existing_wallet.balance-payload.amount
     transaction=Transaction(from_wallet_id=existing_wallet.id,amount=payload.amount,currency=existing_wallet.currency,transaction_type=TransactionType.WITHDRAWAL)
+    user_email=user.email
     session.add(transaction)
     await session.commit()
+    await session.refresh(transaction)
     await session.refresh(existing_wallet)
-    
+    mail_reciept.send(
+        transaction_id=transaction.id,
+        usr_mail=user_email,
+        amount=payload.amount,
+        txn_type=TransactionType.WITHDRAWAL.value,
+        from_wallet_id=existing_wallet.id,
+        to_wallet_id=None,currency=transaction.currency,current_balance=existing_wallet.balance
+    )
     return {
         "wallet_id":existing_wallet.id,"amount":payload.amount,"current_balance":existing_wallet.balance
         }
@@ -86,10 +95,19 @@ async def deposit_transaction(
         currency=existing_wallet.currency,
         transaction_type=TransactionType.DEPOSIT
     )
-    
+    user_email=user.email
     session.add(transaction)
     await session.commit()
+    await session.refresh(transaction)
     await session.refresh(existing_wallet)
+    mail_reciept.send(
+        transaction_id=transaction.id,
+        usr_mail=user_email,
+        amount=payload.amount,
+        txn_type=TransactionType.DEPOSIT.value,
+        from_wallet_id=None,
+        to_wallet_id=existing_wallet.id,currency=transaction.currency,current_balance=existing_wallet.balance
+    )
     
     return {
         "wallet_id": existing_wallet.id,
@@ -164,11 +182,22 @@ async def transfer_transaction(
         currency=existing_wallet.currency,
         transaction_type=TransactionType.TRANSFER
     )
-    
+    user_email=user.email
+    reciever_user_query=select(User).where(User.id==receiver_wallet.id)
+    reciever_user_result=await session.execute(reciever_user_query)
+    reciever_user_result=reciever_user_result.scalar_one_or_none()
+    reciever_full_name=f"{reciever_user_result.first_name} {reciever_user_result.last_name}"
+
     session.add(transaction)
     await session.commit()
     await session.refresh(existing_wallet)
-    
+    await session.refresh(transaction)
+    mail_reciept.send(transaction_id=transaction.id,
+        usr_mail=user_email,
+        amount=payload.amount,
+        txn_type=TransactionType.TRANSFER.value,
+        from_wallet_id=existing_wallet.id,
+        to_wallet_id=payload.to_account_id,currency=transaction.currency,current_balance=existing_wallet.balance,reciever_name=reciever_full_name)
     return {
         "wallet_id": existing_wallet.id,
         "recipient_wallet_id": payload.to_account_id,
@@ -178,7 +207,7 @@ async def transfer_transaction(
 
 
 @router.get(path="/history")
-async def deposit_transaction(limit:int=Query(default=10,ge=1,le=100),offset:int=Query(default=0,ge=0),
+async def history(limit:int=Query(default=10,ge=1,le=100),offset:int=Query(default=0,ge=0),
     session: AsyncSession = Depends(get_session),
     user: User = Depends(get_current_user)
 ):
