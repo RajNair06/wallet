@@ -1,0 +1,46 @@
+services:
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    restart: unless-stopped
+
+  app:
+    build: .
+    ports:
+      - "8000:8000"
+    environment:
+      - SECRET_KEY=${SECRET_KEY:-change-me-in-production}
+      - ALGORITHM=${ALGORITHM:-HS256}
+      - ACCESS_TOKEN_EXPIRE_MINUTES=${ACCESS_TOKEN_EXPIRE_MINUTES:-30}
+      - DATABASE_URL=sqlite+aiosqlite:///data/database.db
+      - REDIS_URL=redis://redis:6379/0
+      - BREVO_API_KEY=${BREVO_API_KEY:-}
+      - SENDER_MAIL=${SENDER_MAIL:-}
+      - SENDER_NAME=${SENDER_NAME:-}
+    volumes:
+      - db_data:/app/data
+    depends_on:
+      - redis
+    restart: unless-stopped
+
+  worker:
+    build: .
+    command: dramatiq workers
+    environment:
+      - SECRET_KEY=${SECRET_KEY:-change-me-in-production}
+      - ALGORITHM=${ALGORITHM:-HS256}
+      - ACCESS_TOKEN_EXPIRE_MINUTES=${ACCESS_TOKEN_EXPIRE_MINUTES:-30}
+      - DATABASE_URL=sqlite+aiosqlite:///data/database.db
+      - REDIS_URL=redis://redis:6379/0
+      - BREVO_API_KEY=${BREVO_API_KEY:-}
+      - SENDER_MAIL=${SENDER_MAIL:-}
+      - SENDER_NAME=${SENDER_NAME:-}
+    volumes:
+      - db_data:/app/data
+    depends_on:
+      - redis
+    restart: unless-stopped
+
+volumes:
+  db_data:

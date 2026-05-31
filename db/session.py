@@ -2,8 +2,9 @@ from sqlmodel import  SQLModel
 from sqlalchemy.ext.asyncio import create_async_engine
 from typing import AsyncGenerator
 from sqlmodel.ext.asyncio.session import AsyncSession
+from config import Config
 
-engine = create_async_engine("sqlite+aiosqlite:///database.db")
+engine = create_async_engine(Config.DATABASE_URL)
 
 async def init_db():
     async with engine.begin() as conn:

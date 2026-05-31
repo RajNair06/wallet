@@ -1,9 +1,13 @@
 import os 
 import dramatiq
+from dramatiq.brokers.redis import RedisBroker
 from brevo import Brevo
 from brevo.transactional_emails import SendTransacEmailRequestSender,SendTransacEmailRequestToItem
 from config import Config
 from db.models import TransactionType
+
+redis_broker = RedisBroker(url=Config.REDIS_URL)
+dramatiq.set_broker(redis_broker)
 client=Brevo(api_key=Config.BREVO_API_KEY)
 @dramatiq.actor(max_retries=3)
 def mail_reciept(
