@@ -29,7 +29,9 @@ app.include_router(wallet_router)
 app.include_router(transaction_router)
 
 
+
+
 @app.get("/", response_class=HTMLResponse)
 def read_root(request: Request):
-    return templates.TemplateResponse("index.html", {"request": request})
+    return templates.TemplateResponse(request, "index.html", {})
 
