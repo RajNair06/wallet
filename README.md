@@ -15,6 +15,14 @@ A production-style digital wallet backend built with **FastAPI**, featuring doub
 - **Transaction history** — paginated history with sender/receiver names
 - **Auto-migrations** — Alembic for schema versioning; tables also auto-created on startup
 
+## System Architecture
+
+![System Architecture Diagram](system_architecture_diagram.svg)
+
+## Transaction Flow
+
+![Transaction Flow](transaction_flow_vertical.svg)
+
 ## Tech Stack
 
 | Layer | Technology |
