@@ -2,6 +2,8 @@
 
 A production-style digital wallet backend built with **FastAPI**, featuring double-entry accounting, idempotent transaction processing, async background workers, and Redis-backed middleware.
 
+> **Live demo:** [https://wallet-tv64.onrender.com](https://wallet-tv64.onrender.com)
+
 ## Features
 
 - **User authentication** — registration, login, JWT bearer tokens (bcrypt + python-jose)
@@ -264,15 +266,6 @@ alembic downgrade -1
 ```
 
 Migrations are configured for async SQLite with batch mode enabled.
-
-## Planned / In Progress
-
-- [ ] Rate limiting (fastapi-limiter)
-- [ ] WebSocket real-time updates (Redis Pub/Sub)
-- [ ] Admin HTMX dashboard (Jinja2 + Tailwind)
-- [ ] Prometheus metrics + structured logging
-- [ ] PostgreSQL production migration
-- [ ] Tests (pytest + httpx AsyncClient)
 
 ## License
 

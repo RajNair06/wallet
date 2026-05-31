@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Wallet Payment Backend</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-950 text-gray-100 min-h-screen flex flex-col">
+
+  <main class="flex-1 max-w-5xl mx-auto w-full px-4 py-10 sm:px-6 lg:px-8">
+
+    <!-- Hero -->
+    <section class="text-center mb-16">
+      <h1 class="text-4xl sm:text-5xl font-bold tracking-tight text-white">
+        Wallet Payment Backend
+      </h1>
+      <p class="mt-4 text-base sm:text-lg text-gray-400 max-w-2xl mx-auto leading-relaxed">
+        A production-style digital wallet API built with FastAPI, featuring double-entry accounting, idempotent transaction processing, Redis-backed middleware, and async background workers.
+      </p>
+      <div class="mt-6 flex flex-wrap justify-center gap-2">
+        <span class="rounded-full bg-indigo-900/50 px-3 py-1 text-xs font-medium text-indigo-300 border border-indigo-700">FastAPI</span>
+        <span class="rounded-full bg-blue-900/50 px-3 py-1 text-xs font-medium text-blue-300 border border-blue-700">SQLModel</span>
+        <span class="rounded-full bg-red-900/50 px-3 py-1 text-xs font-medium text-red-300 border border-red-700">Redis</span>
+        <span class="rounded-full bg-yellow-900/50 px-3 py-1 text-xs font-medium text-yellow-300 border border-yellow-700">Dramatiq</span>
+        <span class="rounded-full bg-cyan-900/50 px-3 py-1 text-xs font-medium text-cyan-300 border border-cyan-700">Docker</span>
+        <span class="rounded-full bg-green-900/50 px-3 py-1 text-xs font-medium text-green-300 border border-green-700">JWT Auth</span>
+      </div>
+      <div class="mt-6 flex flex-wrap justify-center gap-3">
+        <a href="/docs" class="inline-flex items-center gap-1.5 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-500 transition">View API Docs</a>
+        <a href="/redoc" class="inline-flex items-center gap-1.5 rounded-lg bg-gray-800 px-4 py-2 text-sm font-medium text-gray-200 border border-gray-700 hover:bg-gray-700 transition">View ReDoc</a>
+        <a href="https://github.com/RajNair06/wallet" target="_blank" class="inline-flex items-center gap-1.5 rounded-lg bg-gray-800 px-4 py-2 text-sm font-medium text-gray-200 border border-gray-700 hover:bg-gray-700 transition">
+          <svg class="h-4 w-4" fill="currentColor" viewBox="0 0 24 24"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0 0 24 12c0-6.63-5.37-12-12-12z"/></svg>
+          GitHub
+        </a>
+      </div>
+    </section>
+
+    <!-- Architecture Diagram -->
+    <section class="mb-16">
+      <h2 class="text-2xl font-semibold text-white mb-6">Architecture</h2>
+      <div class="bg-gray-900 rounded-xl p-5 sm:p-8 border border-gray-800 overflow-x-auto">
+        <pre class="text-xs sm:text-sm leading-relaxed text-gray-300 font-mono mx-auto w-fit">
+┌─────────────┐
+│   Client    │
+└──────┬──────┘
+       │  HTTP
+       ▼
+┌──────────────┐
+│   FastAPI    │
+│  (Uvicorn)   │
+└───┬──────┬───┘
+    │      │
+    ▼      ▼
+┌──────┐ ┌───────┐
+│ SQL  │ │ Redis │
+│Model │ │       │
+│  ↓   │ │  ↓    │
+│SQLite│ │ Lock  │
+│  or  │ │ Cache │
+│  PG  │ │ Queue │
+└──────┘ └───┬───┘
+             │
+             ▼
+        ┌──────────┐
+        │ Dramatiq  │
+        │  Worker   │
+        └─────┬────┘
+              │
+              ▼
+        ┌──────────┐
+        │  Brevo   │
+        │  Email   │
+        └──────────┘</pre>
+      </div>
+    </section>
+
+    <!-- Core Features -->
+    <section class="mb-16">
+      <h2 class="text-2xl font-semibold text-white mb-6">Core Features</h2>
+      <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <div class="bg-gray-900 rounded-xl p-5 border border-gray-800">
+          <h3 class="font-semibold text-indigo-400">Authentication</h3>
+          <p class="mt-2 text-sm text-gray-400">JWT-based authentication with bcrypt password hashing. Login issues a short-lived access token; every protected endpoint validates it via a reusable dependency.</p>
+        </div>
+        <div class="bg-gray-900 rounded-xl p-5 border border-gray-800">
+          <h3 class="font-semibold text-indigo-400">Wallet Management</h3>
+          <p class="mt-2 text-sm text-gray-400">Create, retrieve, and delete wallets. One wallet per user enforced. Balance guarded by a DB-level <code class="text-xs bg-gray-800 px-1 rounded">CHECK >= 0</code> constraint.</p>
+        </div>
+        <div class="bg-gray-900 rounded-xl p-5 border border-gray-800">
+          <h3 class="font-semibold text-indigo-400">Double-Entry Ledger</h3>
+          <p class="mt-2 text-sm text-gray-400">Immutable debit and credit entries for every transaction. Each entry stores a balance snapshot for point-in-time auditability.</p>
+        </div>
+        <div class="bg-gray-900 rounded-xl p-5 border border-gray-800">
+          <h3 class="font-semibold text-indigo-400">Idempotency</h3>
+          <p class="mt-2 text-sm text-gray-400">Redis-backed request deduplication via the <code class="text-xs bg-gray-800 px-1 rounded">X-Idempotency-Key</code> header. Responses cached for 24 hours; concurrent duplicates blocked with a distributed lock.</p>
+        </div>
+        <div class="bg-gray-900 rounded-xl p-5 border border-gray-800">
+          <h3 class="font-semibold text-indigo-400">Background Workers</h3>
+          <p class="mt-2 text-sm text-gray-400">Async email processing using Dramatiq. Transactional HTML receipts are dispatched via Brevo without blocking the API response. Retry logic on failure.</p>
+        </div>
+        <div class="bg-gray-900 rounded-xl p-5 border border-gray-800">
+          <h3 class="font-semibold text-indigo-400">Audit Trail</h3>
+          <p class="mt-2 text-sm text-gray-400">Complete transaction history with pagination. Query ledger entries per transaction to inspect every debit and credit with its balance snapshot.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Transaction Flow -->
+    <section class="mb-16">
+      <h2 class="text-2xl font-semibold text-white mb-6">Transaction Flow</h2>
+      <div class="bg-gray-900 rounded-xl p-5 sm:p-8 border border-gray-800 overflow-x-auto">
+        <pre class="text-xs sm:text-sm leading-relaxed text-gray-300 font-mono mx-auto w-fit">
+Transfer Request
+       │
+       ▼
+   Validation
+  (auth, balance,
+   currency, self-tx)
+       │
+       ▼
+   DB Transaction
+       │
+       ▼
+  Update Wallets
+  (sender - , recv +)
+       │
+       ▼
+  Create Transaction
+       │
+       ├──► Create DEBIT Ledger Entry
+       │
+       ├──► Create CREDIT Ledger Entry
+       │
+       ▼
+    Commit DB Tx
+       │
+       ▼
+  Queue Email Receipt
+  (async, non-blocking)</pre>
+      </div>
+    </section>
+
+    <!-- Example Request -->
+    <section class="mb-16">
+      <h2 class="text-2xl font-semibold text-white mb-6">Example Request</h2>
+      <div class="bg-gray-900 rounded-xl border border-gray-800 overflow-hidden">
+        <div class="bg-gray-800/50 px-4 py-2 border-b border-gray-800 flex items-center gap-2">
+          <span class="h-3 w-3 rounded-full bg-red-500"></span>
+          <span class="h-3 w-3 rounded-full bg-yellow-500"></span>
+          <span class="h-3 w-3 rounded-full bg-green-500"></span>
+          <span class="ml-2 text-xs text-gray-500 font-mono">PATCH /transaction/transfer</span>
+        </div>
+        <pre class="p-4 sm:p-6 text-xs sm:text-sm text-gray-300 font-mono overflow-x-auto leading-relaxed"><code>Authorization: Bearer &lt;token&gt;
+X-Idempotency-Key: 550e8400-e29b-41d4-a716-446655440000
+Content-Type: application/json
+
+{
+  "to_account_id": 2,
+  "amount": 100,
+  "currency": "USD"
+}</code></pre>
+      </div>
+    </section>
+
+    <!-- System Stats -->
+    <section class="mb-16">
+      <h2 class="text-2xl font-semibold text-white mb-6">System</h2>
+      <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
+        <div class="bg-gray-900 rounded-xl p-4 border border-gray-800 text-center">
+          <div class="text-2xl font-bold text-white">12</div>
+          <div class="text-xs text-gray-500 mt-1">Endpoints</div>
+        </div>
+        <div class="bg-gray-900 rounded-xl p-4 border border-gray-800 text-center">
+          <div class="text-2xl font-bold text-white">4</div>
+          <div class="text-xs text-gray-500 mt-1">Models</div>
+        </div>
+        <div class="bg-gray-900 rounded-xl p-4 border border-gray-800 text-center">
+          <div class="text-2xl font-bold text-white">1</div>
+          <div class="text-xs text-gray-500 mt-1">Middleware</div>
+        </div>
+        <div class="bg-gray-900 rounded-xl p-4 border border-gray-800 text-center">
+          <div class="text-2xl font-bold text-white">1</div>
+          <div class="text-xs text-gray-500 mt-1">Worker</div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Footer -->
+  <footer class="border-t border-gray-800 py-8 text-center text-sm text-gray-500">
+    <p class="text-gray-400 max-w-xl mx-auto">
+      Built with FastAPI, SQLModel, Redis, Dramatiq, and Docker.
+    </p>
+    <p class="mt-3">
+      Created by
+      <a href="https://github.com/RajNair06" target="_blank" class="text-gray-200 hover:text-white transition-colors font-medium">Raj Nair</a>
+      &middot;
+      <a href="https://github.com/RajNair06/wallet" target="_blank" class="text-blue-400 hover:underline">GitHub</a>
+    </p>
+  </footer>
+
+</body>
+</html>
