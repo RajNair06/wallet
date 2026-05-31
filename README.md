@@ -46,7 +46,9 @@ A production-style digital wallet backend built with **FastAPI**, featuring doub
 │   ├── env.py
 │   └── versions/
 ├── core/
-│   └── security.py                 # Password hashing, JWT creation
+│   ├── security.py                 # Password hashing, JWT creation
+│   └── limiter.py                  # Centralized rate limiter definitions (signup, auth,transactions)
+|
 ├── db/
 │   ├── models.py                   # SQLModel tables (User, Wallet, Transaction, LedgerEntry)
 │   └── session.py                  # Async engine, session factory
