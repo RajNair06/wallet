@@ -2,7 +2,7 @@
 
 A production-style digital wallet backend built with **FastAPI**, featuring double-entry accounting, idempotent transaction processing, async background workers, and Redis-backed middleware.
 
-> **Live demo:** [https://wallet-tv64.onrender.com](https://wallet-tv64.onrender.com)
+
 
 ## Features
 
